@@ -6,6 +6,15 @@ const socketIo = require('socket.io');
 const WORLD_WIDTH = 3000;
 const WORLD_HEIGHT = 3000;
 
+const LEVELS = [
+  { duration: 60, foodCount: 300, poisonCount: 125 },
+  { duration: 90, foodCount: 300, poisonCount: 135 },
+  { duration: 120, foodCount: 300, poisonCount: 150 }
+];
+
+let currentLevel = 0;
+let gameTimer = null;
+
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
@@ -22,14 +31,37 @@ let players = {};
 let foods = [];
 
 function spawnFood() {
-  while (foods.length < 200) {
+  const level = LEVELS[currentLevel];
+  while (foods.length < level.foodCount) {
     foods.push({
       id: Date.now() + Math.random(),
       x: Math.random() * WORLD_WIDTH,
       y: Math.random() * WORLD_HEIGHT,
-      radius: Math.random() * 100 + 5,
+      radius: Math.random() * 10 + 5,
+      isPoisonous: foods.length < level.poisonCount
     });
   }
+}
+
+function startGameTimer(socket) {
+  const level = LEVELS[currentLevel];
+  let timeRemaining = level.duration;
+
+  gameTimer = setInterval(() => {
+    timeRemaining--;
+    io.emit('updateTimer', timeRemaining);
+
+    if (timeRemaining <= 0) {
+      clearInterval(gameTimer);
+      if (currentLevel < LEVELS.length - 1) {
+        currentLevel++;
+        io.emit('levelUp', currentLevel);
+        startGameTimer(socket);
+      } else {
+        io.emit('gameOver');
+      }
+    }
+  }, 1000);
 }
 
 function checkCollision(player1, player2) {
@@ -41,6 +73,10 @@ function checkCollision(player1, player2) {
 
 io.on('connection', (socket) => {
   console.log('New client connected');
+
+  if (Object.keys(players).length === 2) {
+    startGameTimer(socket);
+  }
 
   // Create a new player
 // In the server.js file, update the player creation:
@@ -91,9 +127,18 @@ io.on('connection', (socket) => {
     const foodIndex = foods.findIndex(food => food.id === foodId);
     if (foodIndex !== -1 && (players[socket.id].radius * 0.7) > foods[foodIndex].radius) {
       const eatenFood = foods[foodIndex];
-      players[socket.id].radius = Math.sqrt(players[socket.id].radius ** 2 + eatenFood.radius ** 2);
+      if (eatenFood.isPoisonous) {
+        players[socket.id].radius *= 0.5; // Shrink player
+      } else {
+        players[socket.id].radius = Math.sqrt(players[socket.id].radius ** 2 + eatenFood.radius ** 2);
+      }
       foods.splice(foodIndex, 1);
-      io.emit('foodEaten', { playerId: socket.id, foodId, newRadius: players[socket.id].radius });
+      io.emit('foodEaten', { 
+        playerId: socket.id, 
+        foodId, 
+        newRadius: players[socket.id].radius, 
+        wasPoisonous: eatenFood.isPoisonous 
+      });
       spawnFood();
       io.emit('updateFoods', foods);
     }

@@ -15,6 +15,9 @@ function App() {
   const [gameOver, setGameOver] = useState(false);
   const keysPressed = useRef({ up: false, down: false, left: false, right: false });
 
+  const [level, setLevel] = useState(1);
+  const [timeRemaining, setTimeRemaining] = useState(60);
+
   useEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
@@ -51,7 +54,7 @@ function App() {
       ctx.restore();
     }
 
-    function drawFood(x, y, radius) {
+    function drawFood(x, y, radius, isPoisonous) {
       ctx.save();
       ctx.beginPath();
       ctx.arc(x - cameraRef.current.x, y - cameraRef.current.y, radius, 0, Math.PI * 2, false);
@@ -61,8 +64,13 @@ function App() {
         x - cameraRef.current.x, y - cameraRef.current.y, 0,
         x - cameraRef.current.x, y - cameraRef.current.y, radius
       );
-      gradient.addColorStop(0, 'yellow');
-      gradient.addColorStop(1, 'orange');
+      if (isPoisonous) {
+        gradient.addColorStop(0, 'purple');
+        gradient.addColorStop(1, 'red');
+      } else {
+        gradient.addColorStop(0, 'yellow');
+        gradient.addColorStop(1, 'orange');
+      }
       
       ctx.fillStyle = gradient;
       ctx.fill();
@@ -83,6 +91,14 @@ function App() {
     }
 
     socketRef.current = io('http://localhost:3001');
+
+    socketRef.current.on('updateTimer', (time) => {
+      setTimeRemaining(time);
+    });
+  
+    socketRef.current.on('levelUp', (newLevel) => {
+      setLevel(newLevel + 1);
+    });
 
     socketRef.current.on('initGame', ({ players, foods, worldSize }) => {
       playersRef.current = players;
@@ -182,7 +198,7 @@ function App() {
 
       // Draw foods
       foodsRef.current.forEach(food => {
-        drawFood(food.x, food.y, food.radius);
+        drawFood(food.x, food.y, food.radius, food.isPoisonous);
       });
 
       animationFrameId = requestAnimationFrame(update);
@@ -225,7 +241,7 @@ function App() {
   return (
     <div style={{ textAlign: 'center', marginTop: '20px' }}>
       <h1>Circle Eater 2D - Multiplayer</h1>
-      <p>Score: {score}</p>
+      <p>Level: {level} | Time: {timeRemaining} | Score: {score}</p>
       <canvas
         ref={canvasRef}
         width={CANVAS_WIDTH}
