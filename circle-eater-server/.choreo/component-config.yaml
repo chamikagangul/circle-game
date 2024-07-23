@@ -2,7 +2,7 @@ apiVersion: core.choreo.dev/v1beta1
 kind: ComponentConfig
 spec:
   inbound:
-    - name: Greeting Service
+    - name: Game Server
       port: 9090
       type: REST
       networkVisibility: Public
