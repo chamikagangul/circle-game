@@ -22,12 +22,12 @@ let players = {};
 let foods = [];
 
 function spawnFood() {
-  if (foods.length < 20) {
+  while (foods.length < 200) {
     foods.push({
       id: Date.now(),
-      x: Math.random() * CANVAS_WIDTH,
-      y: Math.random() * CANVAS_HEIGHT,
-      radius: Math.random() * 5 + 5,
+      x: Math.random() * WORLD_WIDTH,
+      y: Math.random() * WORLD_HEIGHT,
+      radius: Math.random() * 20 + 5,
     });
   }
 }
@@ -43,12 +43,14 @@ io.on('connection', (socket) => {
   console.log('New client connected');
 
   // Create a new player
+// In the server.js file, update the player creation:
+
   players[socket.id] = {
     id: socket.id,
-    x: Math.random() * CANVAS_WIDTH,
-    y: Math.random() * CANVAS_HEIGHT,
+    x: Math.random() * WORLD_WIDTH,
+    y: Math.random() * WORLD_HEIGHT,
     radius: 20,
-    color: `hsl(${Math.random() * 360}, 100%, 50%)`
+    color: `hsl(${Math.random() * 360}, 100%, 50%)` // This generates vibrant colors
   };
 
   // Send initial game state to the new player
@@ -107,7 +109,7 @@ io.on('connection', (socket) => {
 setInterval(() => {
   spawnFood();
   io.emit('updateFoods', foods);
-}, 1000);
+}, 100);
 
 const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => console.log(`Server running on port ${PORT}`));

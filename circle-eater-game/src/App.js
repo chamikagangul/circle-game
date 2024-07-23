@@ -20,6 +20,68 @@ function App() {
     const ctx = canvas.getContext('2d');
     let animationFrameId;
 
+    function drawCircle(x, y, radius, color) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(x - cameraRef.current.x, y - cameraRef.current.y, radius, 0, Math.PI * 2, false);
+      
+      // Create gradient
+      const gradient = ctx.createRadialGradient(
+        x - cameraRef.current.x, y - cameraRef.current.y, 0,
+        x - cameraRef.current.x, y - cameraRef.current.y, radius
+      );
+      gradient.addColorStop(0, color);
+      gradient.addColorStop(1, 'rgba(0,0,0,0.3)');
+      
+      ctx.fillStyle = gradient;
+      ctx.fill();
+      
+      // Add highlight
+      ctx.beginPath();
+      ctx.arc(x - cameraRef.current.x - radius * 0.2, y - cameraRef.current.y - radius * 0.2, radius * 0.4, 0, Math.PI * 2, false);
+      ctx.fillStyle = 'rgba(255,255,255,0.3)';
+      ctx.fill();
+      
+      // Add shadow
+      ctx.shadowColor = 'rgba(0,0,0,0.5)';
+      ctx.shadowBlur = 10;
+      ctx.shadowOffsetX = 5;
+      ctx.shadowOffsetY = 5;
+      
+      ctx.restore();
+    }
+
+    function drawFood(x, y, radius) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(x - cameraRef.current.x, y - cameraRef.current.y, radius, 0, Math.PI * 2, false);
+      
+      // Create gradient for food
+      const gradient = ctx.createRadialGradient(
+        x - cameraRef.current.x, y - cameraRef.current.y, 0,
+        x - cameraRef.current.x, y - cameraRef.current.y, radius
+      );
+      gradient.addColorStop(0, 'yellow');
+      gradient.addColorStop(1, 'orange');
+      
+      ctx.fillStyle = gradient;
+      ctx.fill();
+      
+      // Add highlight
+      ctx.beginPath();
+      ctx.arc(x - cameraRef.current.x - radius * 0.3, y - cameraRef.current.y - radius * 0.3, radius * 0.2, 0, Math.PI * 2, false);
+      ctx.fillStyle = 'rgba(255,255,255,0.6)';
+      ctx.fill();
+      
+      // Add shadow
+      ctx.shadowColor = 'rgba(0,0,0,0.5)';
+      ctx.shadowBlur = 5;
+      ctx.shadowOffsetX = 2;
+      ctx.shadowOffsetY = 2;
+      
+      ctx.restore();
+    }
+
     socketRef.current = io('http://localhost:3001');
 
     socketRef.current.on('initGame', ({ players, foods, worldSize }) => {
@@ -76,7 +138,9 @@ function App() {
     }
 
     function update() {
-      ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+      // Set black background
+      ctx.fillStyle = 'black';
+      ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
       const currentPlayer = playersRef.current[socketRef.current.id];
       if (currentPlayer) {
@@ -92,8 +156,23 @@ function App() {
             socketRef.current.emit('eatFood', food.id);
           }
         });
+      }
 
-        // Remove player-to-player collision check from client side
+      // Draw grid
+      ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+      ctx.lineWidth = 1;
+      const gridSize = 100;
+      for (let x = -cameraRef.current.x % gridSize; x < CANVAS_WIDTH; x += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, CANVAS_HEIGHT);
+        ctx.stroke();
+      }
+      for (let y = -cameraRef.current.y % gridSize; y < CANVAS_HEIGHT; y += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(CANVAS_WIDTH, y);
+        ctx.stroke();
       }
 
       // Draw players
@@ -103,7 +182,7 @@ function App() {
 
       // Draw foods
       foodsRef.current.forEach(food => {
-        drawCircle(food.x, food.y, food.radius, 'red');
+        drawFood(food.x, food.y, food.radius);
       });
 
       animationFrameId = requestAnimationFrame(update);
