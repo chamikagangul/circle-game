@@ -3,7 +3,7 @@ kind: ComponentConfig
 spec:
   inbound:
     - name: Game Server
-      port: 3001
+      port: 8080
       type: REST
       networkVisibility: Public
       context: /
