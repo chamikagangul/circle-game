@@ -1,0 +1,9 @@
+apiVersion: core.choreo.dev/v1beta1
+kind: ComponentConfig
+spec:
+  inbound:
+    - name: Game Server
+      port: 3001
+      type: REST
+      networkVisibility: Public
+      context: /
