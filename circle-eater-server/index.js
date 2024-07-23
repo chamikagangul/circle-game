@@ -24,10 +24,10 @@ let foods = [];
 function spawnFood() {
   while (foods.length < 200) {
     foods.push({
-      id: Date.now(),
+      id: Date.now() + Math.random(),
       x: Math.random() * WORLD_WIDTH,
       y: Math.random() * WORLD_HEIGHT,
-      radius: Math.random() * 20 + 5,
+      radius: Math.random() * 100 + 5,
     });
   }
 }
@@ -89,9 +89,9 @@ io.on('connection', (socket) => {
 
   socket.on('eatFood', (foodId) => {
     const foodIndex = foods.findIndex(food => food.id === foodId);
-    if (foodIndex !== -1) {
+    if (foodIndex !== -1 && (players[socket.id].radius * 0.7) > foods[foodIndex].radius) {
       const eatenFood = foods[foodIndex];
-      players[socket.id].radius += eatenFood.radius * 0.1;
+      players[socket.id].radius = Math.sqrt(players[socket.id].radius ** 2 + eatenFood.radius ** 2);
       foods.splice(foodIndex, 1);
       io.emit('foodEaten', { playerId: socket.id, foodId, newRadius: players[socket.id].radius });
       spawnFood();
@@ -109,7 +109,7 @@ io.on('connection', (socket) => {
 setInterval(() => {
   spawnFood();
   io.emit('updateFoods', foods);
-}, 100);
+}, 1000);
 
 const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => console.log(`Server running on port ${PORT}`));

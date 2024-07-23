@@ -152,7 +152,7 @@ function App() {
           const dx = currentPlayer.x - food.x;
           const dy = currentPlayer.y - food.y;
           const distance = Math.sqrt(dx * dx + dy * dy);
-          if (distance < currentPlayer.radius + food.radius) {
+          if (distance < currentPlayer.radius && currentPlayer.radius > food.radius) {
             socketRef.current.emit('eatFood', food.id);
           }
         });
