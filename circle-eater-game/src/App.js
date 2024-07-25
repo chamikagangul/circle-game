@@ -11,7 +11,7 @@ function App() {
   const playersRef = useRef({});
   const foodsRef = useRef([]);
   const worldSizeRef = useRef({ width: 0, height: 0 });
-  const cameraRef = useRef({ x: 0, y: 0 });
+  const cameraRef = useRef({ x: 0, y: 0, zoom: 1 });
   const [gameOver, setGameOver] = useState(false);
   const keysPressed = useRef({ up: false, down: false, left: false, right: false });
 
@@ -24,14 +24,23 @@ function App() {
     let animationFrameId;
 
     function drawCircle(x, y, radius, color) {
+      const zoom = cameraRef.current.zoom;
       ctx.save();
+      ctx.scale(zoom, zoom);
       ctx.beginPath();
-      ctx.arc(x - cameraRef.current.x, y - cameraRef.current.y, radius, 0, Math.PI * 2, false);
+      ctx.arc(
+        (x - cameraRef.current.x) / zoom, 
+        (y - cameraRef.current.y) / zoom,
+        radius,
+        0,
+        Math.PI * 2,
+        false
+      );
       
       // Create gradient
       const gradient = ctx.createRadialGradient(
-        x - cameraRef.current.x, y - cameraRef.current.y, 0,
-        x - cameraRef.current.x, y - cameraRef.current.y, radius
+        (x - cameraRef.current.x) / zoom, (y - cameraRef.current.y) / zoom, 0,
+        (x - cameraRef.current.x) / zoom, (y - cameraRef.current.y) / zoom, radius
       );
       gradient.addColorStop(0, color);
       gradient.addColorStop(1, 'rgba(0,0,0,0.3)');
@@ -41,28 +50,44 @@ function App() {
       
       // Add highlight
       ctx.beginPath();
-      ctx.arc(x - cameraRef.current.x - radius * 0.2, y - cameraRef.current.y - radius * 0.2, radius * 0.4, 0, Math.PI * 2, false);
+      ctx.arc(
+        (x - cameraRef.current.x) / zoom - radius * 0.2, 
+        (y - cameraRef.current.y) / zoom - radius * 0.2, 
+        radius * 0.4, 
+        0, 
+        Math.PI * 2, 
+        false
+      );
       ctx.fillStyle = 'rgba(255,255,255,0.3)';
       ctx.fill();
       
       // Add shadow
       ctx.shadowColor = 'rgba(0,0,0,0.5)';
-      ctx.shadowBlur = 10;
-      ctx.shadowOffsetX = 5;
-      ctx.shadowOffsetY = 5;
+      ctx.shadowBlur = 10 * zoom;
+      ctx.shadowOffsetX = 5 * zoom;
+      ctx.shadowOffsetY = 5 * zoom;
       
       ctx.restore();
     }
 
     function drawFood(x, y, radius, isPoisonous) {
+      const zoom = cameraRef.current.zoom;
       ctx.save();
+      ctx.scale(zoom, zoom);
       ctx.beginPath();
-      ctx.arc(x - cameraRef.current.x, y - cameraRef.current.y, radius, 0, Math.PI * 2, false);
+      ctx.arc(
+        (x - cameraRef.current.x) / zoom, 
+        (y - cameraRef.current.y) / zoom, 
+        radius, 
+        0, 
+        Math.PI * 2, 
+        false
+      );
       
       // Create gradient for food
       const gradient = ctx.createRadialGradient(
-        x - cameraRef.current.x, y - cameraRef.current.y, 0,
-        x - cameraRef.current.x, y - cameraRef.current.y, radius
+        (x - cameraRef.current.x) / zoom, (y - cameraRef.current.y) / zoom, 0,
+        (x - cameraRef.current.x) / zoom, (y - cameraRef.current.y) / zoom, radius
       );
       if (isPoisonous) {
         gradient.addColorStop(0, 'purple');
@@ -77,16 +102,23 @@ function App() {
       
       // Add highlight
       ctx.beginPath();
-      ctx.arc(x - cameraRef.current.x - radius * 0.3, y - cameraRef.current.y - radius * 0.3, radius * 0.2, 0, Math.PI * 2, false);
+      ctx.arc(
+        (x - cameraRef.current.x) / zoom - radius * 0.3, 
+        (y - cameraRef.current.y) / zoom - radius * 0.3, 
+        radius * 0.2, 
+        0, 
+        Math.PI * 2, 
+        false
+      );
       ctx.fillStyle = 'rgba(255,255,255,0.6)';
       ctx.fill();
       
       // Add shadow
       ctx.shadowColor = 'rgba(0,0,0,0.5)';
-      ctx.shadowBlur = 5;
-      ctx.shadowOffsetX = 2;
-      ctx.shadowOffsetY = 2;
-      
+      ctx.shadowBlur = 5 * zoom;
+      ctx.shadowOffsetX = 2 * zoom;
+      ctx.shadowOffsetY = 2 * zoom;
+
       ctx.restore();
     }
 
@@ -160,6 +192,13 @@ function App() {
 
       const currentPlayer = playersRef.current[socketRef.current.id];
       if (currentPlayer) {
+        // Calculate zoom factor based on player size
+        const baseRadius = 20; // Assume this is the starting radius
+        const maxZoom = 2; // Maximum zoom out factor
+        const zoomFactor = Math.max(1, Math.min(maxZoom, currentPlayer.radius / baseRadius));
+
+        // Update camera
+        cameraRef.current.zoom = 1 / zoomFactor;
         cameraRef.current.x = currentPlayer.x - CANVAS_WIDTH / 2;
         cameraRef.current.y = currentPlayer.y - CANVAS_HEIGHT / 2;
 
@@ -176,8 +215,8 @@ function App() {
 
       // Draw grid
       ctx.strokeStyle = 'rgba(255,255,255,0.1)';
-      ctx.lineWidth = 1;
-      const gridSize = 100;
+      ctx.lineWidth = 1 * cameraRef.current.zoom;
+      const gridSize = 100 * cameraRef.current.zoom;
       for (let x = -cameraRef.current.x % gridSize; x < CANVAS_WIDTH; x += gridSize) {
         ctx.beginPath();
         ctx.moveTo(x, 0);
@@ -238,19 +277,85 @@ function App() {
     };
   }, []);
 
+  // return (
+  //   <div style={{ textAlign: 'center', marginTop: '20px' }}>
+  //     <h1>Circle Eater 2D - Multiplayer</h1>
+  //     <p>Level: {level} | Time: {timeRemaining} | Score: {score}</p>
+  //     <canvas
+  //       ref={canvasRef}
+  //       width={CANVAS_WIDTH}
+  //       height={CANVAS_HEIGHT}
+  //       style={{ border: '1px solid black' }}
+  //     />
+  //     {gameOver && <div style={{ marginTop: '20px', fontSize: '24px', color: 'red' }}>Game Over!</div>}
+  //   </div>
+  // );
   return (
-    <div style={{ textAlign: 'center', marginTop: '20px' }}>
-      <h1>Circle Eater 2D - Multiplayer</h1>
-      <p>Level: {level} | Time: {timeRemaining} | Score: {score}</p>
-      <canvas
-        ref={canvasRef}
-        width={CANVAS_WIDTH}
-        height={CANVAS_HEIGHT}
-        style={{ border: '1px solid black' }}
-      />
-      {gameOver && <div style={{ marginTop: '20px', fontSize: '24px', color: 'red' }}>Game Over!</div>}
+  <div style={{
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    fontFamily: 'Arial, sans-serif',
+    backgroundColor: '#f0f0f0',
+    padding: '20px',
+    minHeight: '100vh'
+  }}>
+    <h1 style={{
+      color: '#333',
+      marginBottom: '20px'
+    }}>Circle Eater 2D - Multiplayer</h1>
+    
+    <div style={{
+      display: 'flex',
+      justifyContent: 'space-around',
+      width: '100%',
+      maxWidth: '800px',
+      marginBottom: '20px',
+      backgroundColor: '#fff',
+      borderRadius: '10px',
+      padding: '10px',
+      boxShadow: '0 2px 5px rgba(0,0,0,0.1)'
+    }}>
+      <div style={{ textAlign: 'center' }}>
+        <span style={{ fontSize: '14px', color: '#666' }}>Level</span>
+        <br />
+        <span style={{ fontSize: '24px', fontWeight: 'bold', color: '#333' }}>{level}</span>
+      </div>
+      <div style={{ textAlign: 'center' }}>
+        <span style={{ fontSize: '14px', color: '#666' }}>Time</span>
+        <br />
+        <span style={{ fontSize: '24px', fontWeight: 'bold', color: '#333' }}>{timeRemaining}</span>
+      </div>
+      <div style={{ textAlign: 'center' }}>
+        <span style={{ fontSize: '14px', color: '#666' }}>Score</span>
+        <br />
+        <span style={{ fontSize: '24px', fontWeight: 'bold', color: '#333' }}>{score}</span>
+      </div>
     </div>
-  );
+    
+    <canvas
+      ref={canvasRef}
+      width={CANVAS_WIDTH}
+      height={CANVAS_HEIGHT}
+      style={{
+        border: '2px solid #333',
+        borderRadius: '5px'
+      }}
+    />
+    
+    {gameOver && (
+      <div style={{
+        marginTop: '20px',
+        fontSize: '36px',
+        fontWeight: 'bold',
+        color: '#ff0000',
+        textShadow: '2px 2px 4px rgba(0,0,0,0.5)'
+      }}>
+        Game Over!
+      </div>
+    )}
+  </div>
+);
 }
 
 export default App;
