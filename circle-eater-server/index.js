@@ -150,6 +150,15 @@ io.on('connection', (socket) => {
     delete players[socket.id];
     io.emit('playerDisconnected', socket.id);
   });
+
+  socket.on('restartGame', () => {
+    clearInterval(gameTimer);
+    currentLevel = 0;
+    players = {};
+    foods = [];
+    io.emit('restartGame');
+    startGameTimer(socket);
+  });
 });
 
 setInterval(() => {
