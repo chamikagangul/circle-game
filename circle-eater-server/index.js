@@ -114,11 +114,8 @@ players[socket.id] = {
       if (movement.right) players[socket.id].x += speed;
 
       // Keep player within world bounds
-      const halfScreenWidth = players[socket.id].canvasWidth / 2;
-      const halfScreenHeight = players[socket.id].canvasHeight / 2;
-      players[socket.id].x = Math.max(halfScreenWidth, Math.min(players[socket.id].x, WORLD_WIDTH - halfScreenWidth));
-      players[socket.id].y = Math.max(halfScreenHeight, Math.min(players[socket.id].y, WORLD_HEIGHT - halfScreenHeight));
-
+      players[socket.id].x = Math.max(0, Math.min(players[socket.id].x, WORLD_WIDTH));
+      players[socket.id].y = Math.max(0, Math.min(players[socket.id].y, WORLD_HEIGHT));
 
       // Check for player collisions
       Object.values(players).forEach(otherPlayer => {

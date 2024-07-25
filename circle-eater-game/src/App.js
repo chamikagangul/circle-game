@@ -47,16 +47,17 @@ function App() {
       const screenY = y - cameraRef.current.y;
     
       // Only draw if the circle is within or partially within the screen
-      if (
-        screenX + radius > 0 &&
-        screenX - radius < dimensions.width &&
-        screenY + radius > 0 &&
-        screenY - radius < dimensions.height
-      ) {
+      // if (
+      //   screenX + radius > 0 &&
+      //   screenX - radius < dimensions.width &&
+      //   screenY + radius > 0 &&
+      //   screenY - radius < dimensions.height
+      // ) {
+
       ctx.save();
       ctx.beginPath();
       ctx.arc(x, y, radius, 0, Math.PI * 2, false);
-
+    
 			// Create gradient
 			const gradient = ctx.createRadialGradient(
         x, y, 0,
@@ -80,10 +81,13 @@ function App() {
       ctx.shadowOffsetY = 5;
 
       ctx.restore();
-		}
-  }
+    }
+  
 
 		function drawFood(x, y, radius, isPoisonous) {
+      const screenX = x - cameraRef.current.x;
+      const screenY = y - cameraRef.current.y;
+
       ctx.save();
       ctx.beginPath();
       ctx.arc(x, y, radius, 0, Math.PI * 2, false);
@@ -212,12 +216,11 @@ function App() {
       
 			if (currentPlayer) {
         // Update camera position to center the player
-        cameraRef.current.x = currentPlayer.x - dimensions.width / 2;
-        cameraRef.current.y = currentPlayer.y - dimensions.height / 2;
+        cameraRef.current.x = Math.max(0, Math.min(currentPlayer.x - dimensions.width / 2, worldSizeRef.current.width - dimensions.width));
+        cameraRef.current.y = Math.max(0, Math.min(currentPlayer.y - dimensions.height / 2, worldSizeRef.current.height - dimensions.height));
     
         console.log("Camera position:", cameraRef.current);
       
-
 				// Check collision with food
 				foodsRef.current.forEach((food) => {
 					const dx = currentPlayer.x - food.x;
