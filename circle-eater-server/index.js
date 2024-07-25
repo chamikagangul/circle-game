@@ -72,9 +72,7 @@ function checkCollision(player1, player2) {
 }
 
 io.on('connection', (socket) => {
-  console.log('New client connected');
-
-  if (Object.keys(players).length === 2) {
+  if (Object.keys(players).length >= 1) {
     startGameTimer(socket);
   }
 
