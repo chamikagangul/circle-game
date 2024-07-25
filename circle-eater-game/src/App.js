@@ -208,6 +208,7 @@ function App() {
     update();
 
     function handleKeyDown(e) {
+      if (gameOver) return;
       if (e.key === 'ArrowUp') keysPressed.current.up = true;
       if (e.key === 'ArrowDown') keysPressed.current.down = true;
       if (e.key === 'ArrowLeft') keysPressed.current.left = true;
@@ -215,6 +216,7 @@ function App() {
     }
 
     function handleKeyUp(e) {
+      if (gameOver) return;
       if (e.key === 'ArrowUp') keysPressed.current.up = false;
       if (e.key === 'ArrowDown') keysPressed.current.down = false;
       if (e.key === 'ArrowLeft') keysPressed.current.left = false;
@@ -237,7 +239,7 @@ function App() {
       cancelAnimationFrame(animationFrameId);
       clearInterval(movementInterval);
     };
-  }, []);
+  }, [gameOver]);
 
   return (
     <div className="game-container">
