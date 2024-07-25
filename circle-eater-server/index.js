@@ -49,6 +49,7 @@ function startGameTimer(socket) {
 
   gameTimer = setInterval(() => {
     timeRemaining--;
+    console.log('Server time remaining:', timeRemaining);
     io.emit('updateTimer', timeRemaining);
 
     if (timeRemaining <= 0) {

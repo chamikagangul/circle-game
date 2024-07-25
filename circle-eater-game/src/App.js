@@ -125,6 +125,7 @@ function App() {
     socketRef.current = io('http://localhost:3001');
 
     socketRef.current.on('updateTimer', (time) => {
+      console.log('Received time update:', time);
       setTimeRemaining(time);
     });
   
