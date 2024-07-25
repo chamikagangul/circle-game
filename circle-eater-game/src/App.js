@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect, useState, useCallback } from "react";
 import io from "socket.io-client";
 import "./App.css";
 
@@ -6,23 +6,36 @@ const CANVAS_WIDTH = 800;
 const CANVAS_HEIGHT = 600;
 
 function App() {
-	const canvasRef = useRef(null);
-	const [score, setScore] = useState(0);
-	const socketRef = useRef(null);
-	const playersRef = useRef({});
-	const foodsRef = useRef([]);
-	const worldSizeRef = useRef({ width: 0, height: 0 });
-	const cameraRef = useRef({ x: 0, y: 0 });
-	const [gameOver, setGameOver] = useState(false);
-	const keysPressed = useRef({
-		up: false,
-		down: false,
-		left: false,
-		right: false,
-	});
+  const canvasRef = useRef(null);
+  const [score, setScore] = useState(0);
+  const socketRef = useRef(null);
+  const playersRef = useRef({});
+  const foodsRef = useRef([]);
+  const worldSizeRef = useRef({ width: 0, height: 0 });
+  const cameraRef = useRef({ x: 0, y: 0 });
+  const [gameOver, setGameOver] = useState(false);
+  const keysPressed = useRef({
+    up: false,
+    down: false,
+    left: false,
+    right: false,
+  });
 
-	const [level, setLevel] = useState(1);
-	const [timeRemaining, setTimeRemaining] = useState(60);
+  const [level, setLevel] = useState(1);
+  const [timeRemaining, setTimeRemaining] = useState(60);
+  const [dimensions, setDimensions] = useState({ width: window.innerWidth, height: window.innerHeight });
+
+  const updateDimensions = useCallback(() => {
+    setDimensions({
+      width: window.innerWidth,
+      height: window.innerHeight
+    });
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener('resize', updateDimensions);
+    return () => window.removeEventListener('resize', updateDimensions);
+  }, [updateDimensions]);
 
 	useEffect(() => {
 		const canvas = canvasRef.current;
@@ -30,104 +43,78 @@ function App() {
 		let animationFrameId;
 
 		function drawCircle(x, y, radius, color) {
-			ctx.save();
-			ctx.beginPath();
-			ctx.arc(
-				x - cameraRef.current.x,
-				y - cameraRef.current.y,
-				radius,
-				0,
-				Math.PI * 2,
-				false
-			);
+      const screenX = x - cameraRef.current.x;
+      const screenY = y - cameraRef.current.y;
+    
+      // Only draw if the circle is within or partially within the screen
+      if (
+        screenX + radius > 0 &&
+        screenX - radius < dimensions.width &&
+        screenY + radius > 0 &&
+        screenY - radius < dimensions.height
+      ) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2, false);
 
 			// Create gradient
 			const gradient = ctx.createRadialGradient(
-				x - cameraRef.current.x,
-				y - cameraRef.current.y,
-				0,
-				x - cameraRef.current.x,
-				y - cameraRef.current.y,
-				radius
-			);
-			gradient.addColorStop(0, color);
-			gradient.addColorStop(1, "rgba(0,0,0,0.3)");
-
-			ctx.fillStyle = gradient;
-			ctx.fill();
+        x, y, 0,
+        x, y, radius
+      );
+      gradient.addColorStop(0, color);
+      gradient.addColorStop(1, "rgba(0,0,0,0.3)");
+      ctx.fillStyle = gradient;
+      ctx.fill();
 
 			// Add highlight
 			ctx.beginPath();
-			ctx.arc(
-				x - cameraRef.current.x - radius * 0.2,
-				y - cameraRef.current.y - radius * 0.2,
-				radius * 0.4,
-				0,
-				Math.PI * 2,
-				false
-			);
-			ctx.fillStyle = "rgba(255,255,255,0.3)";
-			ctx.fill();
+      ctx.arc(x - radius * 0.2, y - radius * 0.2, radius * 0.4, 0, Math.PI * 2, false);
+      ctx.fillStyle = "rgba(255,255,255,0.3)";
+      ctx.fill();
 
 			// Add shadow
 			ctx.shadowColor = "rgba(0,0,0,0.5)";
-			ctx.shadowBlur = 10;
-			ctx.shadowOffsetX = 5;
-			ctx.shadowOffsetY = 5;
+      ctx.shadowBlur = 10;
+      ctx.shadowOffsetX = 5;
+      ctx.shadowOffsetY = 5;
 
-			ctx.restore();
+      ctx.restore();
 		}
+  }
 
 		function drawFood(x, y, radius, isPoisonous) {
-			ctx.save();
-			ctx.beginPath();
-			ctx.arc(
-				x - cameraRef.current.x,
-				y - cameraRef.current.y,
-				radius,
-				0,
-				Math.PI * 2,
-				false
-			);
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2, false);
 
 			// Create gradient for food
-			const gradient = ctx.createRadialGradient(
-				x - cameraRef.current.x,
-				y - cameraRef.current.y,
-				0,
-				x - cameraRef.current.x,
-				y - cameraRef.current.y,
-				radius
-			);
-			if (isPoisonous) {
-				gradient.addColorStop(0, "purple");
-				gradient.addColorStop(1, "red");
-			} else {
-				gradient.addColorStop(0, "yellow");
-				gradient.addColorStop(1, "orange");
-			}
+      const gradient = ctx.createRadialGradient(
+        x, y, 0,
+        x, y, radius
+      );
+      if (isPoisonous) {
+        gradient.addColorStop(0, "purple");
+        gradient.addColorStop(1, "red");
+      } else {
+        gradient.addColorStop(0, "yellow");
+        gradient.addColorStop(1, "orange");
+      }
 
 			ctx.fillStyle = gradient;
 			ctx.fill();
 
 			// Add highlight
 			ctx.beginPath();
-			ctx.arc(
-				x - cameraRef.current.x - radius * 0.3,
-				y - cameraRef.current.y - radius * 0.3,
-				radius * 0.2,
-				0,
-				Math.PI * 2,
-				false
-			);
-			ctx.fillStyle = "rgba(255,255,255,0.6)";
-			ctx.fill();
+      ctx.arc(x - radius * 0.3, y - radius * 0.3, radius * 0.2, 0, Math.PI * 2, false);
+      ctx.fillStyle = "rgba(255,255,255,0.6)";
+      ctx.fill();
 
-			// Add shadow
-			ctx.shadowColor = "rgba(0,0,0,0.5)";
-			ctx.shadowBlur = 5;
-			ctx.shadowOffsetX = 2;
-			ctx.shadowOffsetY = 2;
+      // Add shadow
+      ctx.shadowColor = "rgba(0,0,0,0.5)";
+      ctx.shadowBlur = 5;
+      ctx.shadowOffsetX = 2;
+      ctx.shadowOffsetY = 2;
 
 			ctx.restore();
 		}
@@ -143,6 +130,7 @@ function App() {
 		});
 
 		socketRef.current.on("initGame", ({ players, foods, worldSize }) => {
+      console.log("Received initial game state:", { players, foods, worldSize });
 			playersRef.current = players;
 			foodsRef.current = foods;
 			worldSizeRef.current = worldSize;
@@ -211,15 +199,24 @@ function App() {
 			ctx.closePath();
 		}
 
+    socketRef.current.emit('canvasSize', dimensions);
+
 		function update() {
-			// Set black background
-			ctx.fillStyle = "black";
-			ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+      ctx.clearRect(0, 0, dimensions.width, dimensions.height);
+      ctx.fillStyle = "black";
+      ctx.fillRect(0, 0, dimensions.width, dimensions.height);
 
 			const currentPlayer = playersRef.current[socketRef.current.id];
+      console.log("Current player:", currentPlayer);
+      console.log("All players:", playersRef.current);
+      
 			if (currentPlayer) {
-				cameraRef.current.x = currentPlayer.x - CANVAS_WIDTH / 2;
-				cameraRef.current.y = currentPlayer.y - CANVAS_HEIGHT / 2;
+        // Update camera position to center the player
+        cameraRef.current.x = currentPlayer.x - dimensions.width / 2;
+        cameraRef.current.y = currentPlayer.y - dimensions.height / 2;
+    
+        console.log("Camera position:", cameraRef.current);
+      
 
 				// Check collision with food
 				foodsRef.current.forEach((food) => {
@@ -237,38 +234,39 @@ function App() {
 
 			// Draw grid
 			ctx.strokeStyle = "rgba(255,255,255,0.1)";
-			ctx.lineWidth = 1;
-			const gridSize = 100;
-			for (
-				let x = -cameraRef.current.x % gridSize;
-				x < CANVAS_WIDTH;
-				x += gridSize
-			) {
-				ctx.beginPath();
-				ctx.moveTo(x, 0);
-				ctx.lineTo(x, CANVAS_HEIGHT);
-				ctx.stroke();
-			}
-			for (
-				let y = -cameraRef.current.y % gridSize;
-				y < CANVAS_HEIGHT;
-				y += gridSize
-			) {
-				ctx.beginPath();
-				ctx.moveTo(0, y);
-				ctx.lineTo(CANVAS_WIDTH, y);
-				ctx.stroke();
-			}
+      ctx.lineWidth = 1;
+      const gridSize = 100;
+      const offsetX = -cameraRef.current.x % gridSize;
+      const offsetY = -cameraRef.current.y % gridSize;
+      
+      for (let x = offsetX; x < dimensions.width; x += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, dimensions.height);
+        ctx.stroke();
+      }
+      for (let y = offsetY; y < dimensions.height; y += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(dimensions.width, y);
+        ctx.stroke();
+      }
 
 			// Draw players
 			Object.values(playersRef.current).forEach((player) => {
-				drawCircle(player.x, player.y, player.radius, player.color);
-			});
+        drawCircle(player.x, player.y, player.radius, player.color);
+        console.log("Drawing player:", player);
+      });
 
 			// Draw foods
 			foodsRef.current.forEach((food) => {
-				drawFood(food.x, food.y, food.radius, food.isPoisonous);
-			});
+        drawFood(
+          food.x - cameraRef.current.x,
+          food.y - cameraRef.current.y,
+          food.radius,
+          food.isPoisonous
+        );
+      });
 
 			animationFrameId = requestAnimationFrame(update);
 		}
@@ -291,23 +289,45 @@ function App() {
 			if (e.key === "ArrowRight") keysPressed.current.right = false;
 		}
 
+    function handleTouchStart(e) {
+      const touch = e.touches[0];
+      const rect = canvas.getBoundingClientRect();
+      const x = touch.clientX - rect.left;
+      const y = touch.clientY - rect.top;
+      
+      keysPressed.current.up = y < dimensions.height / 2;
+      keysPressed.current.down = y >= dimensions.height / 2;
+      keysPressed.current.left = x < dimensions.width / 2;
+      keysPressed.current.right = x >= dimensions.width / 2;
+    }
+
+    function handleTouchEnd() {
+      keysPressed.current = { up: false, down: false, left: false, right: false };
+    }
+
 		window.addEventListener("keydown", handleKeyDown);
-		window.addEventListener("keyup", handleKeyUp);
+    window.addEventListener("keyup", handleKeyUp);
+    canvas.addEventListener("touchstart", handleTouchStart);
+    canvas.addEventListener("touchmove", handleTouchStart);
+    canvas.addEventListener("touchend", handleTouchEnd);
 
 		function emitMovement() {
-			socketRef.current.emit("updatePosition", keysPressed.current);
-		}
+      socketRef.current.emit("updatePosition", keysPressed.current);
+    }
 
-		const movementInterval = setInterval(emitMovement, 1000 / 60); // 60 times per second
+    const movementInterval = setInterval(emitMovement, 1000 / 60);
 
 		return () => {
-			socketRef.current.disconnect();
-			window.removeEventListener("keydown", handleKeyDown);
-			window.removeEventListener("keyup", handleKeyUp);
-			cancelAnimationFrame(animationFrameId);
-			clearInterval(movementInterval);
-		};
-	}, [gameOver]);
+      socketRef.current.disconnect();
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+      canvas.removeEventListener("touchstart", handleTouchStart);
+      canvas.removeEventListener("touchmove", handleTouchStart);
+      canvas.removeEventListener("touchend", handleTouchEnd);
+      cancelAnimationFrame(animationFrameId);
+      clearInterval(movementInterval);
+    };
+  }, [gameOver, dimensions]);
 
   function restartGame() {
     socketRef.current.emit("restartGame");
@@ -336,11 +356,11 @@ function App() {
 			</div>
 
 			<canvas
-				ref={canvasRef}
-				width={CANVAS_WIDTH}
-				height={CANVAS_HEIGHT}
-				className="game-canvas"
-			/>
+        ref={canvasRef}
+        width={dimensions.width}
+        height={dimensions.height}
+        className="game-canvas"
+      />
 
 			{gameOver && (
 				<div>

@@ -43,24 +43,26 @@
   align-items: center;
   font-family: Arial, sans-serif;
   background-color: #f0f0f0;
-  padding: 20px;
+  padding: 10px;
   min-height: 100vh;
+  box-sizing: border-box;
 }
 
 .game-title {
   color: #333;
-  margin-bottom: 20px;
+  margin-bottom: 10px;
+  font-size: 5vw;
+  text-align: center;
 }
 
 .game-stats {
   display: flex;
   justify-content: space-around;
   width: 100%;
-  max-width: 800px;
-  margin-bottom: 20px;
+  margin-bottom: 10px;
   background-color: #fff;
   border-radius: 10px;
-  padding: 10px;
+  padding: 5px;
   box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
@@ -69,25 +71,63 @@
 }
 
 .stat-label {
-  font-size: 14px;
+  font-size: 3vw;
   color: #666;
 }
 
 .stat-value {
-  font-size: 24px;
+  font-size: 4vw;
   font-weight: bold;
   color: #333;
 }
 
 .game-canvas {
+  width: 100%;
+  height: calc(100vh - 150px);
   border: 2px solid #333;
   border-radius: 5px;
+  touch-action: none;
 }
 
 .game-over {
   margin-top: 20px;
-  font-size: 36px;
+  font-size: 8vw;
   font-weight: bold;
   color: #ff0000;
   text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+  text-align: center;
+}
+
+.restart-button {
+  display: block;
+  margin: 20px auto;
+  padding: 10px 20px;
+  font-size: 5vw;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+@media (min-width: 768px) {
+  .game-title {
+    font-size: 36px;
+  }
+
+  .stat-label {
+    font-size: 14px;
+  }
+
+  .stat-value {
+    font-size: 24px;
+  }
+
+  .game-over {
+    font-size: 48px;
+  }
+
+  .restart-button {
+    font-size: 24px;
+  }
 }
