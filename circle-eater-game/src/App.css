@@ -36,3 +36,58 @@
     transform: rotate(360deg);
   }
 }
+
+.game-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-family: Arial, sans-serif;
+  background-color: #f0f0f0;
+  padding: 20px;
+  min-height: 100vh;
+}
+
+.game-title {
+  color: #333;
+  margin-bottom: 20px;
+}
+
+.game-stats {
+  display: flex;
+  justify-content: space-around;
+  width: 100%;
+  max-width: 800px;
+  margin-bottom: 20px;
+  background-color: #fff;
+  border-radius: 10px;
+  padding: 10px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.stat-container {
+  text-align: center;
+}
+
+.stat-label {
+  font-size: 14px;
+  color: #666;
+}
+
+.stat-value {
+  font-size: 24px;
+  font-weight: bold;
+  color: #333;
+}
+
+.game-canvas {
+  border: 2px solid #333;
+  border-radius: 5px;
+}
+
+.game-over {
+  margin-top: 20px;
+  font-size: 36px;
+  font-weight: bold;
+  color: #ff0000;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
