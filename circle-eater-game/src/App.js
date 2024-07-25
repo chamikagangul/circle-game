@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import io from 'socket.io-client';
+import './App.css';
 
 const CANVAS_WIDTH = 800;
 const CANVAS_HEIGHT = 600;
@@ -239,16 +240,39 @@ function App() {
   }, []);
 
   return (
-    <div style={{ textAlign: 'center', marginTop: '20px' }}>
-      <h1>Circle Eater 2D - Multiplayer</h1>
-      <p>Level: {level} | Time: {timeRemaining} | Score: {score}</p>
+    <div className="game-container">
+      <h1 className="game-title">Circle Eater 2D - Multiplayer</h1>
+      
+      <div className="game-stats">
+        <div className="stat-container">
+          <span className="stat-label">Level</span>
+          <br />
+          <span className="stat-value">{level}</span>
+        </div>
+        <div className="stat-container">
+          <span className="stat-label">Time</span>
+          <br />
+          <span className="stat-value">{timeRemaining}</span>
+        </div>
+        <div className="stat-container">
+          <span className="stat-label">Score</span>
+          <br />
+          <span className="stat-value">{score}</span>
+        </div>
+      </div>
+      
       <canvas
         ref={canvasRef}
         width={CANVAS_WIDTH}
         height={CANVAS_HEIGHT}
-        style={{ border: '1px solid black' }}
+        className="game-canvas"
       />
-      {gameOver && <div style={{ marginTop: '20px', fontSize: '24px', color: 'red' }}>Game Over!</div>}
+      
+      {gameOver && (
+        <div className="game-over">
+          Game Over!
+        </div>
+      )}
     </div>
   );
 }
