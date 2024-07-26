@@ -24,6 +24,7 @@ function App() {
   const [level, setLevel] = useState(1);
   const [timeRemaining, setTimeRemaining] = useState(60);
   const [dimensions, setDimensions] = useState({ width: window.innerWidth, height: window.innerHeight });
+  const [zoomFactor, setZoomFactor] = useState(1);
 
   const updateDimensions = useCallback(() => {
     setDimensions({
@@ -186,9 +187,8 @@ function App() {
 			setLevel(1);
 		});
 
-
-
 		function drawCircle(x, y, radius, color) {
+      ctx.save();
 			ctx.beginPath();
 			ctx.arc(
 				x - cameraRef.current.x,
@@ -198,9 +198,27 @@ function App() {
 				Math.PI * 2,
 				false
 			);
-			ctx.fillStyle = color;
-			ctx.fill();
-			ctx.closePath();
+			// Create gradient
+      const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
+      gradient.addColorStop(0, color);
+      gradient.addColorStop(1, "rgba(0,0,0,0.3)");
+
+      ctx.fillStyle = gradient;
+      ctx.fill();
+
+      // Add highlight
+      ctx.beginPath();
+      ctx.arc(x - radius * 0.2, y - radius * 0.2, radius * 0.4, 0, Math.PI * 2, false);
+      ctx.fillStyle = "rgba(255,255,255,0.3)";
+      ctx.fill();
+
+      // Add shadow
+      ctx.shadowColor = "rgba(0,0,0,0.5)";
+      ctx.shadowBlur = 10;
+      ctx.shadowOffsetX = 5;
+      ctx.shadowOffsetY = 5;
+
+      ctx.restore();
 		}
 
     socketRef.current.emit('canvasSize', dimensions);
@@ -215,10 +233,16 @@ function App() {
       console.log("All players:", playersRef.current);
       
 			if (currentPlayer) {
-        // Update camera position to center the player
-        cameraRef.current.x = Math.max(0, Math.min(currentPlayer.x - dimensions.width / 2, worldSizeRef.current.width - dimensions.width));
-        cameraRef.current.y = Math.max(0, Math.min(currentPlayer.y - dimensions.height / 2, worldSizeRef.current.height - dimensions.height));
-    
+        // Calculate zoom factor based on player size
+        const newZoomFactor = Math.max(1, 20 / currentPlayer.radius);
+        setZoomFactor(newZoomFactor);
+        
+        // Update camera position to center the player with zoom factor
+        const zoomedWidth = dimensions.width * zoomFactor;
+        const zoomedHeight = dimensions.height * zoomFactor;
+        cameraRef.current.x = Math.max(0, Math.min(currentPlayer.x - zoomedWidth / 2, worldSizeRef.current.width - zoomedWidth));
+        cameraRef.current.y = Math.max(0, Math.min(currentPlayer.y - zoomedHeight / 2, worldSizeRef.current.height - zoomedHeight));
+  
         console.log("Camera position:", cameraRef.current);
       
 				// Check collision with food
@@ -235,25 +259,31 @@ function App() {
 				});
 			}
 
+      // Apply zoom transformation
+      ctx.save();
+      ctx.scale(1 / zoomFactor, 1 / zoomFactor);
+      ctx.translate(-cameraRef.current.x, -cameraRef.current.y);
+
 			// Draw grid
-			ctx.strokeStyle = "rgba(255,255,255,0.1)";
-      ctx.lineWidth = 1;
-      const gridSize = 100;
-      const offsetX = -cameraRef.current.x % gridSize;
-      const offsetY = -cameraRef.current.y % gridSize;
+      drawGrid();
+			// ctx.strokeStyle = "rgba(255,255,255,0.1)";
+      // ctx.lineWidth = 1;
+      // const gridSize = 100;
+      // const offsetX = -cameraRef.current.x % gridSize;
+      // const offsetY = -cameraRef.current.y % gridSize;
       
-      for (let x = offsetX; x < dimensions.width; x += gridSize) {
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, dimensions.height);
-        ctx.stroke();
-      }
-      for (let y = offsetY; y < dimensions.height; y += gridSize) {
-        ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(dimensions.width, y);
-        ctx.stroke();
-      }
+      // for (let x = offsetX; x < dimensions.width; x += gridSize) {
+      //   ctx.beginPath();
+      //   ctx.moveTo(x, 0);
+      //   ctx.lineTo(x, dimensions.height);
+      //   ctx.stroke();
+      // }
+      // for (let y = offsetY; y < dimensions.height; y += gridSize) {
+      //   ctx.beginPath();
+      //   ctx.moveTo(0, y);
+      //   ctx.lineTo(dimensions.width, y);
+      //   ctx.stroke();
+      // }
 
 			// Draw players
 			Object.values(playersRef.current).forEach((player) => {
@@ -271,10 +301,37 @@ function App() {
         );
       });
 
+      ctx.restore();
+
 			animationFrameId = requestAnimationFrame(update);
 		}
 
 		update();
+
+    function drawGrid() {
+      const gridSize = 100;
+      const offsetX = cameraRef.current.x % gridSize;
+      const offsetY = cameraRef.current.y % gridSize;
+      const zoomedWidth = dimensions.width * zoomFactor;
+      const zoomedHeight = dimensions.height * zoomFactor;
+    
+      ctx.strokeStyle = "rgba(255,255,255,0.1)";
+      ctx.lineWidth = 1;
+    
+      for (let x = offsetX; x < zoomedWidth + gridSize; x += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(x, cameraRef.current.y);
+        ctx.lineTo(x, cameraRef.current.y + zoomedHeight);
+        ctx.stroke();
+      }
+    
+      for (let y = offsetY; y < zoomedHeight + gridSize; y += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(cameraRef.current.x, y);
+        ctx.lineTo(cameraRef.current.x + zoomedWidth, y);
+        ctx.stroke();
+      }
+    }
 
 		function handleKeyDown(e) {
 			if (gameOver) return;
