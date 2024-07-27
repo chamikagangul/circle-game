@@ -90,7 +90,7 @@ function App() {
       
       ctx.restore();
     }
-
+    console.log('Connecting to server... : ', process.env.REACT_APP_SOCKET_URL);
     socketRef.current = io(process.env.REACT_APP_SOCKET_URL);
 
     socketRef.current.on('updateTimer', (time) => {
