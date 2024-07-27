@@ -72,32 +72,42 @@ function checkCollision(player1, player2) {
 }
 
 io.on('connection', (socket) => {
-  console.log('New client connected');
+  console.log('Client connected');
 
-  if (Object.keys(players).length === 2) {
+  if (Object.keys(players).length == 1) {
     startGameTimer(socket);
   }
 
   // Create a new player
 // In the server.js file, update the player creation:
 
-  players[socket.id] = {
-    id: socket.id,
-    x: Math.random() * WORLD_WIDTH,
-    y: Math.random() * WORLD_HEIGHT,
-    radius: 20,
-    color: `hsl(${Math.random() * 360}, 100%, 50%)` // This generates vibrant colors
-  };
+
+players[socket.id] = {
+  id: socket.id,
+  x: Math.random() * WORLD_WIDTH,
+  y: Math.random() * WORLD_HEIGHT,
+  radius: 20,
+  color: `hsl(${Math.random() * 360}, 100%, 50%)`,
+  canvasWidth: CANVAS_WIDTH,
+  canvasHeight: CANVAS_HEIGHT
+};
 
   // Send initial game state to the new player
-  socket.emit('initGame', { players, foods });
-
+  socket.emit('initGame', { players, foods, worldSize: { width: WORLD_WIDTH, height: WORLD_HEIGHT } });
+  
   // Broadcast new player to all other players
   socket.broadcast.emit('newPlayer', players[socket.id]);
 
+  socket.on('canvasSize', ({ width, height }) => {
+    if (players[socket.id]) {
+      players[socket.id].canvasWidth = width;
+      players[socket.id].canvasHeight = height;
+    }
+  });
+
   socket.on('updatePosition', (movement) => {
     if (players[socket.id]) {
-      const speed = 5;
+      const speed = 5 * (players[socket.id].canvasWidth / CANVAS_WIDTH);
       if (movement.up) players[socket.id].y -= speed;
       if (movement.down) players[socket.id].y += speed;
       if (movement.left) players[socket.id].x -= speed;
@@ -118,7 +128,7 @@ io.on('connection', (socket) => {
           }
         }
       });
-
+      console.log("Updated player position:", players[socket.id]);
       io.emit('updatePlayers', players);
     }
   });
@@ -148,6 +158,15 @@ io.on('connection', (socket) => {
     console.log('Client disconnected');
     delete players[socket.id];
     io.emit('playerDisconnected', socket.id);
+  });
+
+  socket.on('restartGame', () => {
+    clearInterval(gameTimer);
+    currentLevel = 0;
+    players = {};
+    foods = [];
+    io.emit('restartGame');
+    startGameTimer(socket);
   });
 });
 
