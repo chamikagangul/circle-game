@@ -260,19 +260,17 @@ function App() {
           <span className="stat-value">{score}</span>
         </div>
       </div>
-      
+      {gameOver && (
+        <div className="game-over">
+          Game Over!
+        </div>
+      )}
       <canvas
         ref={canvasRef}
         width={CANVAS_WIDTH}
         height={CANVAS_HEIGHT}
         className="game-canvas"
       />
-      
-      {gameOver && (
-        <div className="game-over">
-          Game Over!
-        </div>
-      )}
     </div>
   );
 }
