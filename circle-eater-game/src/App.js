@@ -134,7 +134,7 @@ function App() {
     }
 
     console.log('Connecting to server... : ', process.env.REACT_APP_SOCKET_URL);
-    socketRef.current = io("http://localhost:3001");
+    socketRef.current = io(process.env.REACT_APP_SOCKET_URL);
 
     socketRef.current.on('updateTimer', (time) => {
       setTimeRemaining(time);
