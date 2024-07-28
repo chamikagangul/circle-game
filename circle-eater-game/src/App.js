@@ -287,6 +287,16 @@ function App() {
     };
   }, []);
 
+	const handleButtonPress = (direction) => {
+		keysPressed.current[direction] = true;
+
+	};
+
+	const handleButtonRelease = (direction) => {
+		keysPressed.current[direction] = false;
+
+	};
+
   return (
     <div className="game-container">
       <h1 className="game-title">Financial Investment Simulator</h1>
@@ -319,12 +329,60 @@ function App() {
           <p>Final Wealth: ${wealth.toFixed(2)}</p>
         </div>
       )}
+		<div className="wrapper"  style={{position: 'relative'}}>
       {!gameOver && <canvas
         ref={canvasRef}
         width={CANVAS_WIDTH}
         height={CANVAS_HEIGHT}
         className="game-canvas"
       />}
+
+
+			<div className="controls">
+        <div className="control-col">
+
+				<button 
+            onMouseDown={() => handleButtonPress('left')}
+            onMouseUp={() => handleButtonRelease('left')}
+            onTouchStart={() => handleButtonPress('left')}
+            onTouchEnd={() => handleButtonRelease('left')}
+          >
+            Left
+          </button>
+          
+        </div>
+        <div className="control-col">
+				<button 
+            onMouseDown={() => handleButtonPress('up')}
+            onMouseUp={() => handleButtonRelease('up')}
+            onTouchStart={() => handleButtonPress('up')}
+            onTouchEnd={() => handleButtonRelease('up')}
+          >
+            Up
+          </button>
+					<button 
+            onMouseDown={() => handleButtonPress('down')}
+            onMouseUp={() => handleButtonRelease('down')}
+            onTouchStart={() => handleButtonPress('down')}
+            onTouchEnd={() => handleButtonRelease('down')}
+          >
+            Down
+          </button>
+          
+          
+        </div>
+        <div className="control-col">
+				<button 
+            onMouseDown={() => handleButtonPress('right')}
+            onMouseUp={() => handleButtonRelease('right')}
+            onTouchStart={() => handleButtonPress('right')}
+            onTouchEnd={() => handleButtonRelease('right')}
+          >
+            Right
+          </button>
+        </div>
+				</div>
+      </div>
     </div>
   );
 }
