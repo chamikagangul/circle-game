@@ -3,7 +3,7 @@ import io from 'socket.io-client';
 import './App.css';
 
 const CANVAS_WIDTH = 800;
-const CANVAS_HEIGHT = 600;
+const CANVAS_HEIGHT = 500;
 
 function App() {
   const canvasRef = useRef(null);
@@ -134,7 +134,7 @@ function App() {
     }
 
     console.log('Connecting to server... : ', process.env.REACT_APP_SOCKET_URL);
-    socketRef.current = io(process.env.REACT_APP_SOCKET_URL);
+    socketRef.current = io("http://localhost:3001");
 
     socketRef.current.on('updateTimer', (time) => {
       setTimeRemaining(time);
@@ -287,6 +287,16 @@ function App() {
     };
   }, []);
 
+	const handleButtonPress = (direction) => {
+		keysPressed.current[direction] = true;
+
+	};
+
+	const handleButtonRelease = (direction) => {
+		keysPressed.current[direction] = false;
+
+	};
+
   return (
     <div className="game-container">
       <h1 className="game-title">Financial Investment Simulator</h1>
@@ -308,23 +318,68 @@ function App() {
           <span className="stat-value">${wealth.toFixed(2)}</span>
         </div>
       </div>
-      {lastInvestment && (
-        <div className="last-investment">
-          <p>Last Investment Outcome: ${lastInvestment.outcome.toFixed(2)}</p>
-        </div>
-      )}
       {gameOver && (
         <div className="game-over">
           <h2>Game Over!</h2>
           <p>Final Wealth: ${wealth.toFixed(2)}</p>
         </div>
       )}
+			{lastInvestment && (
+        <div className="last-investment">
+          <p>Last Investment Outcome: ${lastInvestment.outcome.toFixed(2)}</p>
+        </div>
+      )}
+		<div className="wrapper"  style={{position: 'relative'}}>
       {!gameOver && <canvas
         ref={canvasRef}
         width={CANVAS_WIDTH}
         height={CANVAS_HEIGHT}
         className="game-canvas"
       />}
+			<div className="controls">
+        <div className="control-col">
+				<button 
+            onMouseDown={() => handleButtonPress('left')}
+            onMouseUp={() => handleButtonRelease('left')}
+            onTouchStart={() => handleButtonPress('left')}
+            onTouchEnd={() => handleButtonRelease('left')}
+          >
+            Left
+          </button>
+          
+        </div>
+        <div className="control-col">
+				<button 
+            onMouseDown={() => handleButtonPress('up')}
+            onMouseUp={() => handleButtonRelease('up')}
+            onTouchStart={() => handleButtonPress('up')}
+            onTouchEnd={() => handleButtonRelease('up')}
+          >
+            Up
+          </button>
+					<button 
+            onMouseDown={() => handleButtonPress('down')}
+            onMouseUp={() => handleButtonRelease('down')}
+            onTouchStart={() => handleButtonPress('down')}
+            onTouchEnd={() => handleButtonRelease('down')}
+          >
+            Down
+          </button>
+          
+          
+        </div>
+        <div className="control-col">
+				<button 
+            onMouseDown={() => handleButtonPress('right')}
+            onMouseUp={() => handleButtonRelease('right')}
+            onTouchStart={() => handleButtonPress('right')}
+            onTouchEnd={() => handleButtonRelease('right')}
+          >
+            Right
+          </button>
+        </div>
+				</div>
+      </div>
     </div>
   );
 }
