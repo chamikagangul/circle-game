@@ -3,29 +3,21 @@ import io from 'socket.io-client';
 import './App.css';
 
 const CANVAS_WIDTH = 800;
-const CANVAS_HEIGHT = 500;
+const CANVAS_HEIGHT = 600;
 
 function App() {
   const canvasRef = useRef(null);
-  const [wealth, setWealth] = useState(1000);
+  const [score, setScore] = useState(0);
   const socketRef = useRef(null);
   const playersRef = useRef({});
-  const investmentsRef = useRef([]);
+  const foodsRef = useRef([]);
   const worldSizeRef = useRef({ width: 0, height: 0 });
   const cameraRef = useRef({ x: 0, y: 0 });
   const [gameOver, setGameOver] = useState(false);
-  const keysPressed = useRef({
-    up: false,
-    down: false,
-    left: false,
-    right: false,
-  });
+  const keysPressed = useRef({ up: false, down: false, left: false, right: false });
 
   const [level, setLevel] = useState(1);
   const [timeRemaining, setTimeRemaining] = useState(60);
-  const [lastInvestment, setLastInvestment] = useState(null);
-
-  console.log(playersRef?.current[socketRef?.current?.id]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -34,119 +26,84 @@ function App() {
 
     function drawCircle(x, y, radius, color) {
       ctx.save();
-
-      // Begin a new path for the circle
       ctx.beginPath();
-
-      // Draw the circle arc
-      ctx.arc(
-        x - cameraRef.current.x,
-        y - cameraRef.current.y,
-        radius,
-        0,
-        Math.PI * 2,
-        false,
-      );
-
-      // Set the fill color to the specified color
-      ctx.fillStyle = color;
-
-      // Fill the circle with the specified color
-      ctx.fill();
-
-      // Restore the previous context state
-      ctx.restore();
-    }
-
-    function drawInvestment(investment) {
-     let x = investment.x
-     let y=    investment.y
-      let radius =   investment.radius
-      let investmentName =    investment.name
-      let interest =    investment.interest
-      let  risk =   investment.risk
-
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(
-        x - cameraRef.current.x,
-        y - cameraRef.current.y,
-        radius,
-        0,
-        Math.PI * 2,
-        false,
-      );
-
+      ctx.arc(x - cameraRef.current.x, y - cameraRef.current.y, radius, 0, Math.PI * 2, false);
+      
+      // Create gradient
       const gradient = ctx.createRadialGradient(
-        x - cameraRef.current.x,
-        y - cameraRef.current.y,
-        0,
-        x - cameraRef.current.x,
-        y - cameraRef.current.y,
-        radius,
+        x - cameraRef.current.x, y - cameraRef.current.y, 0,
+        x - cameraRef.current.x, y - cameraRef.current.y, radius
       );
-
-      // Color based on risk-reward ratio
-      const riskRewardRatio = interest / risk;
-      let color;
-      if (riskRewardRatio > 1) {
-        color = `rgb(0, ${Math.min(255, riskRewardRatio * 100)}, 0)`; // Green for good investments
-      } else {
-        color = `rgb(${Math.min(255, (1 / riskRewardRatio) * 100)}, 0, 0)`; // Red for risky investments
-      }
-
       gradient.addColorStop(0, color);
-      gradient.addColorStop(1, 'rgba(255,255,255,0.3)');
-
+      gradient.addColorStop(1, 'rgba(0,0,0,0.3)');
+      
       ctx.fillStyle = gradient;
       ctx.fill();
-
-      ctx.fillStyle = 'white';
-      ctx.font = '10px Arial';
-      ctx.textAlign = 'center';
-      ctx.fillText(
-        `${radius}$`,
-        x - cameraRef.current.x,
-        y - cameraRef.current.y + 3,
-      );
-
+      
+      // Add highlight
+      ctx.beginPath();
+      ctx.arc(x - cameraRef.current.x - radius * 0.2, y - cameraRef.current.y - radius * 0.2, radius * 0.4, 0, Math.PI * 2, false);
+      ctx.fillStyle = 'rgba(255,255,255,0.3)';
+      ctx.fill();
+      
+      // Add shadow
+      ctx.shadowColor = 'rgba(0,0,0,0.5)';
+      ctx.shadowBlur = 10;
+      ctx.shadowOffsetX = 5;
+      ctx.shadowOffsetY = 5;
+      
       ctx.restore();
-      let currentPlayer = playersRef.current[socketRef.current.id];
-      const thresholdDistance = 100;
-      const distance = Math.sqrt(
-        Math.pow(x - currentPlayer.x, 2) + Math.pow(y - currentPlayer.y, 2)
-    );
-      // show popup with investment details
-      if (distance <= thresholdDistance) {
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-      let name  = `Investment: ${investmentName}`
-      const textWidth = ctx.measureText(name).width;
-      const rectWidth = textWidth + 20;
-      ctx.fillRect(x - cameraRef.current.x - rectWidth / 2, y - cameraRef.current.y - 60, rectWidth, 50);
-
-      ctx.fillStyle = 'black'; 
-      ctx.font = '12px Arial';
-      ctx.textAlign = 'center';
-      ctx.fillText(name, x - cameraRef.current.x, y - cameraRef.current.y - 45);
-      ctx.fillText(`Interest: ${interest}%`, x - cameraRef.current.x, y - cameraRef.current.y - 30);
-      ctx.fillText(`Risk: ${risk}%`, x - cameraRef.current.x, y - cameraRef.current.y - 15);
-      }
     }
 
+    function drawFood(x, y, radius, isPoisonous) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(x - cameraRef.current.x, y - cameraRef.current.y, radius, 0, Math.PI * 2, false);
+      
+      // Create gradient for food
+      const gradient = ctx.createRadialGradient(
+        x - cameraRef.current.x, y - cameraRef.current.y, 0,
+        x - cameraRef.current.x, y - cameraRef.current.y, radius
+      );
+      if (isPoisonous) {
+        gradient.addColorStop(0, 'purple');
+        gradient.addColorStop(1, 'red');
+      } else {
+        gradient.addColorStop(0, 'yellow');
+        gradient.addColorStop(1, 'orange');
+      }
+      
+      ctx.fillStyle = gradient;
+      ctx.fill();
+      
+      // Add highlight
+      ctx.beginPath();
+      ctx.arc(x - cameraRef.current.x - radius * 0.3, y - cameraRef.current.y - radius * 0.3, radius * 0.2, 0, Math.PI * 2, false);
+      ctx.fillStyle = 'rgba(255,255,255,0.6)';
+      ctx.fill();
+      
+      // Add shadow
+      ctx.shadowColor = 'rgba(0,0,0,0.5)';
+      ctx.shadowBlur = 5;
+      ctx.shadowOffsetX = 2;
+      ctx.shadowOffsetY = 2;
+      
+      ctx.restore();
+    }
     console.log('Connecting to server... : ', process.env.REACT_APP_SOCKET_URL);
-    socketRef.current = io("http://localhost:3001");
+    socketRef.current = io(process.env.REACT_APP_SOCKET_URL);
 
     socketRef.current.on('updateTimer', (time) => {
       setTimeRemaining(time);
     });
-
+  
     socketRef.current.on('levelUp', (newLevel) => {
       setLevel(newLevel + 1);
     });
 
-    socketRef.current.on('initGame', ({ players, investments, worldSize }) => {
+    socketRef.current.on('initGame', ({ players, foods, worldSize }) => {
       playersRef.current = players;
-      investmentsRef.current = investments;
+      foodsRef.current = foods;
       worldSizeRef.current = worldSize;
     });
 
@@ -158,30 +115,28 @@ function App() {
       playersRef.current = players;
     });
 
-    socketRef.current.on('updateInvestments', (investments) => {
-      investmentsRef.current = investments;
+    socketRef.current.on('updateFoods', (foods) => {
+      foodsRef.current = foods;
     });
 
-    socketRef.current.on(
-      'investmentMade',
-      ({
-        playerId,
-        investmentId,
-        newWealth,
-        newRadius,
-        investmentName,
-        outcome,
-      }) => {
-        if (playersRef.current[playerId]) {
-          playersRef.current[playerId].wealth = newWealth;
-          playersRef.current[playerId].radius = newRadius;
-        }
-        if (playerId === socketRef.current.id) {
-          setWealth(newWealth);
-          setLastInvestment({ name: investmentName, outcome });
-        }
-      },
-    );
+    socketRef.current.on('foodEaten', ({ playerId, foodId, newRadius }) => {
+      if (playersRef.current[playerId]) {
+        playersRef.current[playerId].radius = newRadius;
+      }
+      if (playerId === socketRef.current.id) {
+        setScore(prevScore => prevScore + 1);
+      }
+    });
+
+    socketRef.current.on('playerEaten', ({ eaterId, eatenId, newRadius }) => {
+      if (playersRef.current[eaterId]) {
+        playersRef.current[eaterId].radius = newRadius;
+      }
+      delete playersRef.current[eatenId];
+      if (eatenId === socketRef.current.id) {
+        setGameOver(true);
+      }
+    });
 
     socketRef.current.on('gameOver', () => {
       setGameOver(true);
@@ -191,7 +146,16 @@ function App() {
       delete playersRef.current[playerId];
     });
 
+    function drawCircle(x, y, radius, color) {
+      ctx.beginPath();
+      ctx.arc(x - cameraRef.current.x, y - cameraRef.current.y, radius, 0, Math.PI * 2, false);
+      ctx.fillStyle = color;
+      ctx.fill();
+      ctx.closePath();
+    }
+
     function update() {
+      // Set black background
       ctx.fillStyle = 'black';
       ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
@@ -200,54 +164,42 @@ function App() {
         cameraRef.current.x = currentPlayer.x - CANVAS_WIDTH / 2;
         cameraRef.current.y = currentPlayer.y - CANVAS_HEIGHT / 2;
 
-        investmentsRef.current.forEach((investment) => {
-          const dx = currentPlayer.x - investment.x;
-          const dy = currentPlayer.y - investment.y;
+        // Check collision with food
+        foodsRef.current.forEach(food => {
+          const dx = currentPlayer.x - food.x;
+          const dy = currentPlayer.y - food.y;
           const distance = Math.sqrt(dx * dx + dy * dy);
-          if (
-            distance < currentPlayer.radius &&
-            currentPlayer.radius > investment.radius
-          ) {
-            socketRef.current.emit('makeInvestment', investment.id);
+          if (distance < currentPlayer.radius && currentPlayer.radius > food.radius) {
+            socketRef.current.emit('eatFood', food.id);
           }
-          // if (distance < currentPlayer.radius + investment.radius) {
-          //   socketRef.current.emit('makeInvestment', investment.id);
-          // }
         });
       }
 
+      // Draw grid
       ctx.strokeStyle = 'rgba(255,255,255,0.1)';
       ctx.lineWidth = 1;
       const gridSize = 100;
-      for (
-        let x = -cameraRef.current.x % gridSize;
-        x < CANVAS_WIDTH;
-        x += gridSize
-      ) {
+      for (let x = -cameraRef.current.x % gridSize; x < CANVAS_WIDTH; x += gridSize) {
         ctx.beginPath();
         ctx.moveTo(x, 0);
         ctx.lineTo(x, CANVAS_HEIGHT);
         ctx.stroke();
       }
-      for (
-        let y = -cameraRef.current.y % gridSize;
-        y < CANVAS_HEIGHT;
-        y += gridSize
-      ) {
+      for (let y = -cameraRef.current.y % gridSize; y < CANVAS_HEIGHT; y += gridSize) {
         ctx.beginPath();
         ctx.moveTo(0, y);
         ctx.lineTo(CANVAS_WIDTH, y);
         ctx.stroke();
       }
 
-      Object.values(playersRef.current).forEach((player) => {
+      // Draw players
+      Object.values(playersRef.current).forEach(player => {
         drawCircle(player.x, player.y, player.radius, player.color);
       });
 
-      investmentsRef.current.forEach((investment) => {
-        drawInvestment(
-          investment
-        );
+      // Draw foods
+      foodsRef.current.forEach(food => {
+        drawFood(food.x, food.y, food.radius, food.isPoisonous);
       });
 
       animationFrameId = requestAnimationFrame(update);
@@ -276,7 +228,7 @@ function App() {
       socketRef.current.emit('updatePosition', keysPressed.current);
     }
 
-    const movementInterval = setInterval(emitMovement, 1000 / 60);
+    const movementInterval = setInterval(emitMovement, 1000 / 60); // 60 times per second
 
     return () => {
       socketRef.current.disconnect();
@@ -287,20 +239,10 @@ function App() {
     };
   }, []);
 
-	const handleButtonPress = (direction) => {
-		keysPressed.current[direction] = true;
-
-	};
-
-	const handleButtonRelease = (direction) => {
-		keysPressed.current[direction] = false;
-
-	};
-
   return (
     <div className="game-container">
-      <h1 className="game-title">Financial Investment Simulator</h1>
-
+      <h1 className="game-title">Circle Eater 2D - Multiplayer</h1>
+      
       <div className="game-stats">
         <div className="stat-container">
           <span className="stat-label">Level</span>
@@ -313,75 +255,22 @@ function App() {
           <span className="stat-value">{timeRemaining}</span>
         </div>
         <div className="stat-container">
-          <span className="stat-label">Wealth</span>
+          <span className="stat-label">Score</span>
           <br />
-          <span className="stat-value">${wealth.toFixed(2)}</span>
+          <span className="stat-value">{score}</span>
         </div>
       </div>
-      {gameOver && (
-        <div className="game-over">
-          <h2>Game Over!</h2>
-          <p>Final Wealth: ${wealth.toFixed(2)}</p>
-        </div>
-      )}
-		<div className="wrapper"  style={{position: 'relative'}}>
-      {!gameOver && <canvas
+      
+      <canvas
         ref={canvasRef}
         width={CANVAS_WIDTH}
         height={CANVAS_HEIGHT}
         className="game-canvas"
-      />}
-
-
-			<div className="controls">
-        <div className="control-col">
-
-				<button 
-            onMouseDown={() => handleButtonPress('left')}
-            onMouseUp={() => handleButtonRelease('left')}
-            onTouchStart={() => handleButtonPress('left')}
-            onTouchEnd={() => handleButtonRelease('left')}
-          >
-            Left
-          </button>
-          
-        </div>
-        <div className="control-col">
-				<button 
-            onMouseDown={() => handleButtonPress('up')}
-            onMouseUp={() => handleButtonRelease('up')}
-            onTouchStart={() => handleButtonPress('up')}
-            onTouchEnd={() => handleButtonRelease('up')}
-          >
-            Up
-          </button>
-					<button 
-            onMouseDown={() => handleButtonPress('down')}
-            onMouseUp={() => handleButtonRelease('down')}
-            onTouchStart={() => handleButtonPress('down')}
-            onTouchEnd={() => handleButtonRelease('down')}
-          >
-            Down
-          </button>
-          
-          
-        </div>
-        <div className="control-col">
-				<button 
-            onMouseDown={() => handleButtonPress('right')}
-            onMouseUp={() => handleButtonRelease('right')}
-            onTouchStart={() => handleButtonPress('right')}
-            onTouchEnd={() => handleButtonRelease('right')}
-          >
-            Right
-          </button>
-        </div>
-				</div>
-      </div>
-
-			{lastInvestment && (
-        <div className="last-investment">
-          <p>Last Investment Outcome: ${lastInvestment.outcome.toFixed(2)}</p>
+      />
+      
+      {gameOver && (
+        <div className="game-over">
+          Game Over!
         </div>
       )}
     </div>
