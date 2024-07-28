@@ -3,7 +3,7 @@ import io from 'socket.io-client';
 import './App.css';
 
 const CANVAS_WIDTH = 800;
-const CANVAS_HEIGHT = 600;
+const CANVAS_HEIGHT = 500;
 
 function App() {
   const canvasRef = useRef(null);
@@ -134,7 +134,7 @@ function App() {
     }
 
     console.log('Connecting to server... : ', process.env.REACT_APP_SOCKET_URL);
-    socketRef.current = io(process.env.REACT_APP_SOCKET_URL);
+    socketRef.current = io("http://localhost:3001");
 
     socketRef.current.on('updateTimer', (time) => {
       setTimeRemaining(time);
@@ -318,11 +318,6 @@ function App() {
           <span className="stat-value">${wealth.toFixed(2)}</span>
         </div>
       </div>
-      {lastInvestment && (
-        <div className="last-investment">
-          <p>Last Investment Outcome: ${lastInvestment.outcome.toFixed(2)}</p>
-        </div>
-      )}
       {gameOver && (
         <div className="game-over">
           <h2>Game Over!</h2>
@@ -383,6 +378,12 @@ function App() {
         </div>
 				</div>
       </div>
+
+			{lastInvestment && (
+        <div className="last-investment">
+          <p>Last Investment Outcome: ${lastInvestment.outcome.toFixed(2)}</p>
+        </div>
+      )}
     </div>
   );
 }
