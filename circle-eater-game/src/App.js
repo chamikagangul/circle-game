@@ -324,6 +324,11 @@ function App() {
           <p>Final Wealth: ${wealth.toFixed(2)}</p>
         </div>
       )}
+			{lastInvestment && (
+        <div className="last-investment">
+          <p>Last Investment Outcome: ${lastInvestment.outcome.toFixed(2)}</p>
+        </div>
+      )}
 		<div className="wrapper"  style={{position: 'relative'}}>
       {!gameOver && <canvas
         ref={canvasRef}
@@ -331,11 +336,8 @@ function App() {
         height={CANVAS_HEIGHT}
         className="game-canvas"
       />}
-
-
 			<div className="controls">
         <div className="control-col">
-
 				<button 
             onMouseDown={() => handleButtonPress('left')}
             onMouseUp={() => handleButtonRelease('left')}
@@ -378,12 +380,6 @@ function App() {
         </div>
 				</div>
       </div>
-
-			{lastInvestment && (
-        <div className="last-investment">
-          <p>Last Investment Outcome: ${lastInvestment.outcome.toFixed(2)}</p>
-        </div>
-      )}
     </div>
   );
 }
