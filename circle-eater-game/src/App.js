@@ -317,7 +317,7 @@ function App() {
         <div className="stat-container">
           <span className="stat-label">Time</span>
           <br />
-          <span className="stat-value">{timeRemaining}</span>
+          <span className="stat-value">{gameOver ? '0' : timeRemaining}</span>
         </div>
         <div className="stat-container">
           <span className="stat-label">Wealth</span>
