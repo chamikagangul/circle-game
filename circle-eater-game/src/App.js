@@ -134,7 +134,7 @@ function App() {
     }
 
     console.log('Connecting to server... : ', process.env.REACT_APP_SOCKET_URL);
-    socketRef.current = io("http://localhost:3001");
+    socketRef.current = io(process.env.REACT_APP_SOCKET_URL);
 
     socketRef.current.on('updateTimer', (time) => {
       setTimeRemaining(time);
@@ -331,6 +331,11 @@ function App() {
           <p>Final Wealth: ${wealth.toFixed(2)}</p>
         </div>
       )}
+			{lastInvestment && (
+        <div className="last-investment">
+          <p>Last Investment Outcome: ${lastInvestment.outcome.toFixed(2)}</p>
+        </div>
+      )}
 		<div className="wrapper"  style={{position: 'relative'}}>
       {!gameOver && <canvas
         ref={canvasRef}
@@ -338,11 +343,8 @@ function App() {
         height={CANVAS_HEIGHT}
         className="game-canvas"
       />}
-
-
 			<div className="controls">
         <div className="control-col">
-
 				<button 
             onMouseDown={() => handleButtonPress('left')}
             onMouseUp={() => handleButtonRelease('left')}
