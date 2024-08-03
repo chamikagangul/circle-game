@@ -226,6 +226,14 @@ io.on('connection', (socket) => {
     delete players[socket.id];
     io.emit('playerDisconnected', socket.id);
   });
+
+  socket.on('gameReset', () => {
+    clearInterval(gameTimer);
+    currentLevel = 0;
+    players = {};
+    investments = [];
+    io.emit('gameReset');
+  });
 });
 
 setInterval(() => {

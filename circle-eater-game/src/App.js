@@ -187,6 +187,10 @@ function App() {
       setGameOver(true);
     });
 
+    socketRef.current.on('gameReset', () => {
+      window.location.reload();
+    });
+
     socketRef.current.on('playerDisconnected', (playerId) => {
       delete playersRef.current[playerId];
     });
@@ -289,13 +293,16 @@ function App() {
 
 	const handleButtonPress = (direction) => {
 		keysPressed.current[direction] = true;
-
 	};
 
 	const handleButtonRelease = (direction) => {
 		keysPressed.current[direction] = false;
 
 	};
+
+  const resetGame = () => {
+    socketRef.current.emit('gameReset');
+  }
 
   return (
     <div className="game-container">
@@ -310,7 +317,7 @@ function App() {
         <div className="stat-container">
           <span className="stat-label">Time</span>
           <br />
-          <span className="stat-value">{timeRemaining}</span>
+          <span className="stat-value">{gameOver ? '0' : timeRemaining}</span>
         </div>
         <div className="stat-container">
           <span className="stat-label">Wealth</span>
@@ -380,6 +387,18 @@ function App() {
         </div>
 				</div>
       </div>
+
+			{lastInvestment && (
+        <div className="last-investment">
+          <p>Last Investment Outcome: ${lastInvestment.outcome.toFixed(2)}</p>
+        </div>
+      )}
+      <button
+        className="reset-button"
+        onClick={() => resetGame()}
+      >
+        Reset Game
+      </button>
     </div>
   );
 }
